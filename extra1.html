@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <title>Extracurricular Achievements (Prototype)</title>
+  <style>
+    :root{font-family:Inter,system-ui,Segoe UI,Roboto,Arial;--max:1000px}
+    body{margin:0;background:#f5f7fb;color:#111;display:flex;justify-content:center;padding:24px}
+    .wrap{width:100%;max-width:var(--max);background:#fff;border-radius:12px;box-shadow:0 6px 30px rgba(20,30,60,.08);padding:20px}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+    h1{font-size:18px;margin:0}
+    .roles{display:flex;gap:8px}
+    button{cursor:pointer;padding:8px 12px;border-radius:8px;border:1px solid #d6dbe8;background:transparent}
+    main{display:grid;grid-template-columns:1fr 360px;gap:16px}
+    section.card{background:#fbfdff;border-radius:10px;padding:12px;border:1px solid #eef3fb}
+    form .row{display:flex;gap:8px;margin-bottom:8px}
+    label{font-size:13px}
+    input,select,textarea{width:100%;padding:8px;border-radius:8px;border:1px solid #dce6f6;background:#fff}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid #eef3fb;text-align:left;font-size:14px}
+    .small{font-size:13px;color:#555}
+    .muted{color:#6b7280;font-size:12px}
+    .pill{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid #e6eefc;background:#f7fbff;font-size:12px}
+    .actions button{margin-right:6px}
+    .hidden{display:none}
+    .topbar{display:flex;gap:6px;align-items:center}
+    .search{display:flex;gap:6px}
+    .csv{margin-top:8px}
+    footer{margin-top:16px;font-size:12px;color:#666}
+  </style>
+</head>
+<body>
+  <div class="wrap" role="application" aria-label="FEDF-PS45 prototype">
+    <header>
+      <h1>Student Extracurricular Achievements</h1>
+      <div class="topbar">
+        <div id="currentUser" class="muted">Not logged in</div>
+        <div class="roles">
+          <button id="btnShowLogin">Login</button>
+          <button id="btnLogout" class="hidden">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div>
+        <!-- LOGIN -->
+        <section id="view-login" class="card">
+          <h3>Sign in (prototype)</h3>
+          <p class="small">Choose a role and enter student ID/name to demo the flows.</p>
+          <form id="loginForm">
+            <div class="row">
+              <select id="role" required>
+                <option value="student">Student</option>
+                <option value="admin">Admin</option>
+              </select>
+              <input id="loginName" placeholder="Your name (or admin)" required />
+            </div>
+            <div class="row">
+              <input id="loginStudentId" placeholder="Student ID (for student role)" />
+              <button type="submit">Sign in</button>
+            </div>
+          </form>
+        </section>
+
+        <!-- STUDENT -->
+        <section id="view-student" class="card hidden">
+          <h3>Student Portfolio</h3>
+          <div class="small">Student: <strong id="stuName"></strong> — ID: <span id="stuId"></span></div>
+          <hr/>
+          <h4>Your Achievements</h4>
+          <div id="studentAchievementsList" class="muted">No achievements yet.</div>
+
+          <hr/>
+          <h4>Submit New Achievement</h4>
+          <form id="studentSubmitForm">
+            <div class="row"><input id="s_title" placeholder="Title (e.g. Debate: 1st Place)" required /></div>
+            <div class="row"><input id="s_category" placeholder="Category (Debate/Sports/Music)" required /></div>
+            <div class="row"><input id="s_date" type="date" /></div>
+            <div class="row"><textarea id="s_desc" placeholder="Short description"></textarea></div>
+            <div class="row"><input id="s_evidence" placeholder="Evidence URL (optional)" /></div>
+            <div class="row"><button type="submit">Submit (goes to admin)</button></div>
+            <div class="muted small">Submissions default to <em>not approved</em> until admin approves.</div>
+          </form>
+        </section>
+
+        <!-- ADMIN -->
+        <section id="view-admin" class="card hidden">
+          <h3>Admin Dashboard</h3>
+          <div class="small">Welcome, <strong id="adminName"></strong></div>
+          <hr/>
+          <h4>Add / Create Achievement (quick)</h4>
+          <form id="adminAddForm">
+            <div class="row"><input id="a_studentId" placeholder="Student ID" required /></div>
+            <div class="row"><input id="a_studentName" placeholder="Student name" required /></div>
+            <div class="row"><input id="a_title" placeholder="Title" required /></div>
+            <div class="row"><input id="a_category" placeholder="Category" required /></div>
+            <div class="row"><input id="a_date" type="date" /></div>
+            <div class="row"><textarea id="a_desc" placeholder="Description"></textarea></div>
+            <div class="row"><input id="a_evidence" placeholder="Evidence URL" /></div>
+            <div class="row"><button type="submit">Add & Approve</button></div>
+          </form>
+
+          <hr/>
+          <h4>All Submissions</h4>
+          <div class="search">
+            <input id="adminSearch" placeholder="Filter by student or category" />
+            <button id="btnExportCsv">Export CSV</button>
+          </div>
+          <div id="achTableWrap" style="margin-top:8px;overflow:auto;max-height:380px">
+            <table id="achTable" aria-label="Achievements table">
+              <thead><tr><th>Student</th><th>Title</th><th>Category</th><th>Date</th><th>Approved</th><th>Actions</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <aside>
+        <section class="card">
+          <h4>Quick Stats</h4>
+          <div class="small">Total achievements: <strong id="statTotal">0</strong></div>
+          <div class="small">Approved: <strong id="statApproved">0</strong></div>
+          <div class="small">Pending: <strong id="statPending">0</strong></div>
+        </section>
+
+        <section class="card" style="margin-top:12px">
+          <h4>How to use</h4>
+          <ol class="small">
+            <li>Login as <strong>admin</strong> to add/approve or export CSV.</li>
+            <li>Login as <strong>student</strong> to view and submit achievements.</li>
+            <li>Data is stored in your browser (localStorage) in this demo.</li>
+          </ol>
+        </section>
+      </aside>
+    </main>
+
+    <footer>Prototype — no server. Use this to design UI and flows, then connect to a backend API.</footer>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'fedf_ps45_achievements_v1';
+    function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+    function load(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch(e){ return []; } }
+    function save(data){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+    // Seed data
+    if(!localStorage.getItem(STORAGE_KEY)){
+      const seed = [
+        {id: uid(), studentId:'S100', studentName:'Alice Rao', title:'Inter-school Debate — 1st', category:'Debate', date:'2024-11-20', description:'Won 1st place', evidenceUrl:'', approved:true},
+        {id: uid(), studentId:'S101', studentName:'Rahul Kumar', title:'District Football Runner-up', category:'Sports', date:'2025-02-10', description:'Team captain', evidenceUrl:'', approved:false}
+      ];
+      save(seed);
+    }
+
+    const viewLogin = document.getElementById('view-login');
+    const viewStudent = document.getElementById('view-student');
+    const viewAdmin = document.getElementById('view-admin');
+    const currentUser = document.getElementById('currentUser');
+    const btnShowLogin = document.getElementById('btnShowLogin');
+    const btnLogout = document.getElementById('btnLogout');
+
+    // LOGIN
+    document.getElementById('loginForm').addEventListener('submit', e=>{
+      e.preventDefault();
+      const role = document.getElementById('role').value;
+      const name = document.getElementById('loginName').value.trim();
+      const sid = document.getElementById('loginStudentId').value.trim() || null;
+      const user = {role, name, studentId: sid};
+      sessionStorage.setItem('fedf_user', JSON.stringify(user));
+      applyLogin();
+    });
+
+    btnShowLogin.addEventListener('click', ()=> viewLogin.scrollIntoView({behavior:'smooth'}));
+    btnLogout.addEventListener('click', ()=> { sessionStorage.removeItem('fedf_user'); applyLogin(); });
+
+    function applyLogin(){
+      const u = JSON.parse(sessionStorage.getItem('fedf_user') || 'null');
+      if(!u){
+        currentUser.textContent = 'Not logged in';
+        btnLogout.classList.add('hidden');
+        viewStudent.classList.add('hidden');
+        viewAdmin.classList.add('hidden');
+        viewLogin.classList.remove('hidden');
+      } else {
+        currentUser.textContent = `${u.role.toUpperCase()}: ${u.name}`;
+        btnLogout.classList.remove('hidden');
+        viewLogin.classList.add('hidden');
+        if(u.role === 'admin'){
+          viewAdmin.classList.remove('hidden');
+          viewStudent.classList.add('hidden');
+          document.getElementById('adminName').textContent = u.name;
+        } else {
+          viewStudent.classList.remove('hidden');
+          viewAdmin.classList.add('hidden');
+          document.getElementById('stuName').textContent = u.name;
+          document.getElementById('stuId').textContent = u.studentId || '(none)';
+        }
+        renderAll();
+      }
+    }
+
+    // STUDENT submit
+    document.getElementById('studentSubmitForm').addEventListener('submit', e=>{
+      e.preventDefault();
+      const user = JSON.parse(sessionStorage.getItem('fedf_user') || 'null');
+      if(!user || user.role!=='student') return alert('Please login as student');
+      const title = document.getElementById('s_title').value.trim();
+      const category = document.getElementById('s_category').value.trim();
+      const date = document.getElementById('s_date').value || new Date().toISOString().slice(0,10);
+      const desc = document.getElementById('s_desc').value.trim();
+      const evidence = document.getElementById('s_evidence').value.trim();
+      const arr = load();
+      arr.push({id: uid(), studentId: user.studentId || ('S-'+user.name), studentName: user.name, title, category, date, description: desc, evidenceUrl: evidence, approved: false});
+      save(arr);
+      document.getElementById('studentSubmitForm').reset();
+      renderAll();
+      alert('Submission saved (pending admin approval).');
+    });
+
+    // ADMIN add
+    document.getElementById('adminAddForm').addEventListener('submit', e=>{
+      e.preventDefault();
+      const user = JSON.parse(sessionStorage.getItem('fedf_user') || 'null');
+      if(!user || user.role!=='admin') return alert('Please login as admin');
+      const sid = document.getElementById('a_studentId').value.trim();
+      const sname = document.getElementById('a_studentName').value.trim();
+      const title = document.getElementById('a_title').value.trim();
+      const category = document.getElementById('a_category').value.trim();
+      const date = document.getElementById('a_date').value || new Date().toISOString().slice(0,10);
+      const desc = document.getElementById('a_desc').value.trim();
+      const ev = document.getElementById('a_evidence').value.trim();
+      const arr = load();
+      arr.push({id: uid(), studentId: sid, studentName: sname, title, category, date, description: desc, evidenceUrl: ev, approved: true});
+      save(arr);
+      document.getElementById('adminAddForm').reset();
+      renderAll();
+      alert('Achievement added & approved.');
+    });
+
+    function renderAll(){
+      const arr = load();
+      document.getElementById('statTotal').textContent = arr.length;
+      document.getElementById('statApproved').textContent = arr.filter(a=>a.approved).length;
+      document.getElementById('statPending').textContent = arr.filter(a=>!a.approved).length;
+      renderTable(arr);
+      renderStudentList();
+    }
+
+    function renderStudentList(){
+      const user = JSON.parse(sessionStorage.getItem('fedf_user') || 'null');
+      if(!user || user.role!=='student') return;
+      const arr = load().filter(a => (a.studentId === user.studentId) || (a.studentName === user.name));
+      const wrap = document.getElementById('studentAchievementsList');
+      if(!arr.length){ wrap.innerHTML = '<div class="muted">No achievements yet.</div>'; return; }
+      let html = '<ul>';
+      arr.forEach(a=>{
+        html += `<li><strong>${a.title}</strong> <span class="pill">${a.category}</span>
+        <div class="small">${a.date} • ${a.approved?'<span style="color:green">Approved</span>':'<span style="color:orange">Pending</span>'}</div>
+        <div class="muted">${a.description||''}</div></li><br/>`;
+      });
+      html += '</ul>';
+      wrap.innerHTML = html;
+    }
+
+    function renderTable(items){
+      const tbody = document.querySelector('#achTable tbody');
+      tbody.innerHTML = '';
+      const filter = (document.getElementById('adminSearch')?.value || '').trim().toLowerCase();
+      items.filter(a => {
+        if(!filter) return true;
+        return (a.studentName||'').toLowerCase().includes(filter)
+          || (a.category||'').toLowerCase().includes(filter)
+          || (a.title||'').toLowerCase().includes(filter);
+      }).sort((x,y)=> (y.date||'').localeCompare(x.date||'')).forEach(a=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${a.studentName} <div class="muted">${a.studentId||''}</div></td>
+          <td><strong>${a.title}</strong><div class="muted">${a.description||''}</div></td>
+          <td>${a.category||''}</td>
+          <td>${a.date||''}</td>
+          <td>${a.approved?'<span style="color:green">Yes</span>':'<span style="color:orange">No</span>'}</td>
+          <td class="actions">
+            ${a.evidenceUrl?`<a target="_blank" href="${a.evidenceUrl}">Evidence</a>`:''}
+            <button data-id="${a.id}" class="btnApprove">${a.approved?'Unapprove':'Approve'}</button>
+            <button data-id="${a.id}" class="btnDelete">Delete</button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+
+      // button actions
+      document.querySelectorAll('.btnApprove').forEach(b=>{
+        b.onclick = ()=>{
+          const id = b.getAttribute('data-id');
+          const arr = load();
+          const idx = arr.findIndex(x=>x.id===id);
+          if(idx>=0){ arr[idx].approved = !arr[idx].approved; save(arr); renderAll(); }
+        };
+      });
+      document.querySelectorAll('.btnDelete').forEach(b=>{
+        b.onclick = ()=>{
+          if(!confirm('Delete this achievement?')) return;
+          const id = b.getAttribute('data-id');
+          let arr = load().filter(x=>x.id!==id);
+          save(arr); renderAll();
+        };
+      });
+    }
+
+    document.getElementById('adminSearch').addEventListener('input', ()=> renderAll());
+
+    // CSV export
+    document.getElementById('btnExportCsv').addEventListener('click', ()=>{
+      const arr = load();
+      if(!arr.length) return alert('No data');
+      const cols = ['studentId','studentName','title','category','date','description','evidenceUrl','approved'];
+      const csv = [cols.join(',')].concat(
+        arr.map(r => cols.map(k => `"${String(r[k]||'').replace(/"/g,'""')}"`).join(','))
+      ).join('\n');
+      const blob = new Blob([csv], {type:'text/csv'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'achievements_export.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+
+    // Initialize
+    applyLogin();
+    renderAll();
+  </script>
+</body>
+</html>
